@@ -1,4 +1,5 @@
 import * as Buildings from "./data/buildings"
+import * as Upgrades from "./data/upgrades"
 import { calculateCost } from "./data/object"
 import { element } from "./util/dom_helper"
 import { game } from "./main"
@@ -47,13 +48,38 @@ export class UIMessenger {
     }
 
     constructShop() {
-        const parent = document.querySelector<HTMLElement>(`#buildings`)!
-        parent.innerHTML = ""
+        const upgradesParent = document.querySelector<HTMLElement>(`#upgrades`)!
+        upgradesParent.innerHTML = ""
+
+        for (const [id, bought] of Object.entries(game.upgradeState)) {
+            if (bought) continue
+            const upgrade = Upgrades.get(id)!
+            upgradesParent.appendChild(this.createUpgrade(upgrade))
+        }
+
+        const buildingsParent = document.querySelector<HTMLElement>(`#buildings`)!
+        buildingsParent.innerHTML = ""
 
         for (const [id] of Object.entries(game.buildingState)) {
             const building = Buildings.get(id)!
-            parent.appendChild(this.createBuilding(building))
+            buildingsParent.appendChild(this.createBuilding(building))
         }
+    }
+
+    private createUpgrade(upgrade: Upgrades.Upgrade): HTMLDivElement {
+        return element("div", {
+            classes: [ "upgradeProduct" ],
+            onclick: () => { game.purchaseUpgrade(upgrade.id) },
+
+            children: [
+                element("div", {
+                    classes: [ "icon" ],
+                    style: {
+                        backgroundPositionX: `${upgrade.icon * -48}px`
+                    },
+                }),
+            ],
+        })
     }
 
     private createBuilding(building: Buildings.Building): HTMLDivElement {
@@ -96,22 +122,40 @@ export class UIMessenger {
     }
 
     updateAll() {
-        this.updateCounter()
-        this.updateShop()
-    }
+        this.updateWealth()
+        this.updateWps()
 
-    updateCounter() {
-        this.counter.innerHTML = `${unit}: ${formatNumber(game.wealth, true)}`
-        this.wps.innerHTML = `${formatNumber(game.getCurrentWps())} ${unitPerSecond}`
-    }
-
-    updateShop() {
-        for (const [id, amount] of Object.entries(game.buildingState)) {
-            const building = Buildings.get(id)!
-            const cost = calculateCost(building, amount)
-
-            document.querySelector<HTMLElement>(`#productPrice${building.uiId}`)!.innerHTML = `${formatNumber(cost, true)} ${unit}`
-            document.querySelector<HTMLElement>(`#productsOwned${building.uiId}`)!.innerHTML = `${amount}`
+        this.updateShopUpgrades()
+        for (const building of Buildings.dataset) {
+            this.updateShopBuilding(building.id)
         }
+    }
+
+    updateWealth() {
+        this.counter.innerHTML = `${unit}: ${formatNumber(game.wealth, true)}`
+    }
+
+    updateWps() {
+        this.wps.innerHTML = `${formatNumber(game.wps)} ${unitPerSecond}`
+    }
+
+    updateShopUpgrades() {
+        const upgradesParent = document.querySelector<HTMLElement>(`#upgrades`)!
+        upgradesParent.innerHTML = ""
+
+        for (const [id, bought] of Object.entries(game.upgradeState)) {
+            if (bought) continue
+            const upgrade = Upgrades.get(id)!
+            upgradesParent.appendChild(this.createUpgrade(upgrade))
+        }
+    }
+
+    updateShopBuilding(id: string) {
+        const building = Buildings.get(id)!
+        const amount = game.buildingState[id]
+        const cost = calculateCost(building, amount)
+
+        document.querySelector<HTMLElement>(`#productPrice${building.uiId}`)!.innerHTML = `${formatNumber(cost, true)} ${unit}`
+        document.querySelector<HTMLElement>(`#productsOwned${building.uiId}`)!.innerHTML = `${amount}`
     }
 }

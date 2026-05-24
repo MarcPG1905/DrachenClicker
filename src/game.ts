@@ -10,11 +10,15 @@ export class Game {
     paused: boolean = false
 
     wealth: number = 0
+
+    clickFactor: number = baseClickFactor
     
     buildingState: Buildings.State = {}
     upgradeState: Upgrades.State = {}
 
-    clickFactor: number = baseClickFactor
+    activeUpgrades: Upgrades.Upgrade[] = []
+
+    wps: number = 0.0
 
     constructor() {
         this.initStates()
@@ -22,7 +26,7 @@ export class Game {
 
         setInterval(() => {
             if (!this.paused)
-                this.addWealth(this.getCurrentWps() * wealthUpdateInterval)
+                this.addWealth(this.wps * wealthUpdateInterval)
         }, wealthUpdateInterval * 1000)
 
         setInterval(() => { this.saveGame() }, autosaveInterval * 1000)
@@ -36,6 +40,20 @@ export class Game {
         for (const upgrade of Upgrades.dataset) {
             this.upgradeState[upgrade.id] = false
         }
+    }
+
+    resetData() {
+        this.buildingState = {}
+        this.upgradeState = {}
+        this.activeUpgrades.length = 0
+        this.initStates()
+
+        this.wps = 0.0
+
+        this.wealth = 0
+        this.clickFactor = baseClickFactor
+
+        ui.updateAll()
     }
 
     private serializeData() {
@@ -53,9 +71,20 @@ export class Game {
     private loadData(data: any) {
         try {
             this.wealth = data.wealth ?? 0
-            this.buildingState = data.buildingState ?? this.buildingState
-            this.upgradeState = data.upgradeState ?? this.upgradeState
             this.clickFactor = data.clickFactor ?? this.clickFactor
+
+            for (const [id, state] of Object.entries(data.buildingState)) {
+                if (id in this.buildingState)
+                    this.buildingState[id] = state as number
+            }
+            for (const [id, state] of Object.entries(data.upgradeState)) {
+                if (id in this.upgradeState && state as boolean) {
+                    this.upgradeState[id] = true
+                    this.activeUpgrades.push(Upgrades.get(id)!)
+                }
+            }
+
+            this.recalcWps()
         } catch (err) {
             ui.displayError("Spiel konnte nicht geladen werden", err)
         }
@@ -112,16 +141,7 @@ export class Game {
     }
     // --- Ende ChatGPT ---
 
-    resetData() {
-        this.buildingState = {}
-        this.upgradeState = {}
-        this.initStates()
-
-        this.wealth = 0
-        ui.updateAll()
-    }
-
-    getCurrentWps(): number {
+    recalcWps() {
         let wps = 0.0
 
         for (const [id, amount] of Object.entries(this.buildingState)) {
@@ -129,29 +149,33 @@ export class Game {
             wps += building.baseWps * amount
         }
 
-        // TODO: Go through upgrades asswell.
+        for (const upgrade of this.activeUpgrades) {
+            if (upgrade.wpsEffect)
+                wps = upgrade.wpsEffect(wps)
+        }
 
-        return wps
+        this.wps = wps
+        ui.updateWps()
     }
 
     setWealth(amount: number) {
         this.wealth = amount
-        ui.updateCounter()
+        ui.updateWealth()
     }
 
     removeWealth(amount: number) {
         this.wealth -= amount
-        ui.updateCounter()
+        ui.updateWealth()
     }
 
     addWealth(amount: number) {
         this.wealth += amount
-        ui.updateCounter()
+        ui.updateWealth()
     }
 
     click(event: MouseEvent) {
-        const okpc = this.getCurrentWps() * this.clickFactor
-        const added = Math.max(1, 0.9 + okpc/2, okpc)
+        const wpc = this.wps * this.clickFactor
+        const added = Math.max(1, 0.9 + wpc/2, wpc)
 
         this.addWealth(added)
         ui.spawnFloatingText(event.clientX, event.clientY, "+" + formatNumber(added))
@@ -159,12 +183,18 @@ export class Game {
 
     purchaseUpgrade(id: string): boolean {
         const upgrade = Upgrades.get(id)!
-        const cost = calculateCost(upgrade, this.buildingState[id])
+        const cost = calculateCost(upgrade, 0)
 
         if (this.wealth >= cost) {
             this.removeWealth(cost)
             this.upgradeState[id] = true
-            ui.updateShop()
+            this.activeUpgrades.push(upgrade)
+            
+            this.recalcWps()
+            if (upgrade.clickFactorEffect)
+                this.clickFactor = upgrade.clickFactorEffect(this.clickFactor)
+
+            ui.updateShopUpgrades()
             return true
         } else {
             ui.displayMessage(`Nicht genug ${unit} um das Upgrade zu kaufen!`)
@@ -179,7 +209,10 @@ export class Game {
         if (this.wealth >= cost) {
             this.removeWealth(cost)
             this.buildingState[id] += 1
-            ui.updateShop()
+
+            this.recalcWps()
+
+            ui.updateShopBuilding(id)
             return true
         } else {
             ui.displayMessage(`Nicht genug ${unit} um das Building zu kaufen!`)

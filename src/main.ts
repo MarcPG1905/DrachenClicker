@@ -15,7 +15,8 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = /*html*/ `
 </div>
 <div id="shopSection" class="mainSection">
     <h1>Shop</h1>
-    <div id="buildings"></div>
+    <div id="upgrades" class="shopPart"></div>
+    <div id="buildings" class="shopPart"></div>
 </div>
 `
 

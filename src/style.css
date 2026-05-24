@@ -139,24 +139,7 @@ h1 {
 
   transition: transform 100ms ease;
 
-  clip-path: polygon(
-    56.04% -0.26%,
-    69.8% 20.26%,
-    83.33% 26.84%,
-    100.83% 51.58%,
-    100.83% 61.32%,
-    93.13% 58.95%,
-    90.63% 83.94%,
-    72.71% 97.11%,
-    54.37% 99.73%,
-    43.54% 99.74%,
-    22.29% 95.26%,
-    7.71% 81.58%,
-    6.04% 43.68%,
-    -2.51% 35%,
-    12.91% 21.05%,
-    34.79% 20.27%
-  );
+  clip-path: polygon(56.04% -0.26%, 69.8% 20.26%,83.33% 26.84%, 100.83% 51.58%, 100.83% 61.32%, 93.13% 58.95%, 90.63% 83.94%, 72.71% 97.11%, 54.37% 99.73%, 43.54% 99.74%, 22.29% 95.26%, 7.71% 81.58%, 6.04% 43.68%, -2.51% 35%, 12.91% 21.05%, 34.79% 20.27%);
 }
 
 #bigButton:hover {
@@ -171,6 +154,29 @@ h1 {
 #shopSection {
   width: 50%;
   left: 50%;
+}
+
+.shopPart {
+  margin-top: 20px;
+}
+
+#upgrades {
+  display: block;
+  height: auto;
+}
+
+.upgradeProduct {
+  align-items: center;
+
+  border: rgb(255 255 255 / 10%) 2px solid;
+  border-radius: 12px;
+  
+  margin-bottom: 3px;
+  padding: 10px;
+  gap: 12px;
+
+  width: 48px;
+  height: 48px;
 }
 
 #buildings {
