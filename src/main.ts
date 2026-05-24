@@ -6,7 +6,6 @@ import { setupKeyboardShortcuts } from './keyboard_shortcuts'
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = /*html*/ `
 <div id="notification"></div>
 <div id="fx-layer"></div>
-<div id="credits">Henri & Marc</div>
 <div id="bigButtonSection" class="mainSection">
     <div id="bigButtonParts">
         <h1 id="counter"></h1>
