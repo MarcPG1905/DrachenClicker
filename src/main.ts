@@ -37,12 +37,10 @@ document.querySelector<HTMLButtonElement>('#bigButton')!
     .addEventListener('click', (e) => game.click(e))
 
 // Allow cheating in F12 console (for testing).
-if (import.meta.env.DEV) {
-    Object.assign(globalThis, {
-        game,
-        ui,
-    })
-}
+Object.assign(globalThis, {
+    "Game": game,
+    "UI": ui,
+})
 
 // Auto-save when closing (or maybe some other events aswell, not sure)
 window.addEventListener("beforeunload", () => { game.saveGame() })
