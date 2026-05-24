@@ -1,0 +1,243 @@
+@import url('https://fonts.googleapis.com/css2?family=Jersey+20&display=swap');
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+
+  color: #d0d0d0;
+  background: #3a2f24;
+  
+  font-family: "Jersey 20", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+
+  background: url("assets/background.png") no-repeat center;
+  background-size: cover;
+}
+
+body {
+  user-select: none;
+  touch-action: manipulation;
+  color: #fff;
+  overflow: hidden;
+  line-height: 1;
+  font-size: 20px;
+}
+
+.centerText {
+  text-align: center;
+}
+
+h1 {
+  font-size: 28px;
+  text-align: center;
+}
+
+#fx-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.float-text {
+  position: absolute;
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+
+  text-align: center;
+
+  transform: translate(-50%, -50%) translateY(0);
+  opacity: 1;
+
+  animation: floatUp 2s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translate(-50%, -50%) translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translateY(-120px);
+    opacity: 0;
+  }
+}
+
+#notification {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 20px;
+
+  border: white 1px solid;
+  border-radius: 12px;
+  opacity: 0;
+
+  z-index: 2000;
+
+  pointer-events: none;
+
+  transition: opacity 0.2s ease;
+}
+
+#notification.show {
+  opacity: 1;
+}
+
+#credits {
+  position: fixed;
+  bottom: 5px;
+  right: 5px;
+  color: white;
+  mix-blend-mode: difference;
+}
+
+.mainSection {
+  position: absolute;
+  height: 100%;
+}
+
+#bigButtonSection {
+  width: 50%;
+  padding-top: 10vh;
+
+  display: flex;
+  justify-content: center;
+}
+
+#bigButtonParts {
+  width: min(480px, 48vw);
+  height: min(500px, 50vw);
+}
+
+#bigButton {
+  /* The actual texture - using button instead of image, so you can't drag it. */
+  background: url("assets/ofenkase_64.png") no-repeat center;
+  background-size: contain;
+  image-rendering: pixelated;
+
+  width: min(480px, 48vw);
+  height: min(380px, 38vw);
+
+  border: none;
+  cursor: pointer;
+
+  display: inline-block;
+  user-select: none;
+  -webkit-user-drag: none;
+
+  transform: scale(1);
+  transform-origin: center;
+
+  transition: transform 100ms ease;
+
+  clip-path: polygon(
+    56.04% -0.26%,
+    69.8% 20.26%,
+    83.33% 26.84%,
+    100.83% 51.58%,
+    100.83% 61.32%,
+    93.13% 58.95%,
+    90.63% 83.94%,
+    72.71% 97.11%,
+    54.37% 99.73%,
+    43.54% 99.74%,
+    22.29% 95.26%,
+    7.71% 81.58%,
+    6.04% 43.68%,
+    -2.51% 35%,
+    12.91% 21.05%,
+    34.79% 20.27%,
+  );
+}
+
+#bigButton:hover {
+  transform: scale(0.98);
+  filter: brightness(0.85);
+}
+
+#bigButton:active {
+  transform: scale(0.95);
+}
+
+#shopSection {
+  width: 50%;
+  left: 50%;
+}
+
+#buildings {
+  display: grid;
+  height: auto;
+}
+
+.buildingProduct {
+  display: flex;
+  align-items: center;
+
+  border: rgb(255 255 255 / 10%) 2px solid;
+  border-radius: 12px;
+
+  margin-bottom: 3px;
+  padding: 10px;
+  gap: 12px;
+
+  transition: all 100ms ease;
+}
+
+.buildingProduct:hover {
+  background-color: rgb(255 255 255 / 5%);
+}
+
+.buildingProduct:active {
+  background-color: rgb(255 255 255 / 15%);
+}
+
+.icon {
+  width: 48px;
+  height: 48px;
+
+  flex-shrink: 0;
+
+  image-rendering: pixelated;
+  background: url("assets/icons.png") no-repeat center;
+
+  /* Scale icons.png x3 to get 48px per image. */
+  background-size: 336px 48px;
+}
+
+.content {
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+
+  position: relative;
+}
+
+.productName {
+  font-size: 24px;
+  letter-spacing: -1px;
+}
+
+.productPrice {
+  font-size: 14px;
+}
+
+.productsOwned {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+
+  font-size: 40px;
+  opacity: 0.2;
+  letter-spacing: -2.5px;
+}
