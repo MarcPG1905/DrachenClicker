@@ -1,10 +1,10 @@
 import { decode, encode } from "cbor-x"
 import * as Buildings from "./data/buildings"
-import { autosaveInterval, baseClickFactor, gameName, wealthUpdateInterval, unit } from "./data/constants"
+import { autosaveInterval, baseClickFactor, gameName, wealthUpdateInterval, unit, baseOfflineFactor, baseOfflineLimit } from "./data/constants"
 import { calculateCost } from "./data/object"
 import * as Upgrades from "./data/upgrades"
 import { ui } from "./main"
-import { formatNumber } from "./util/number_converter"
+import { formatDuration, formatNumber } from "./util/number_converter"
 
 export class Game {
     paused: boolean = false
@@ -12,6 +12,8 @@ export class Game {
     wealth: number = 0
 
     clickFactor: number = baseClickFactor
+    offlineFactor: number = baseOfflineFactor
+    offlineLimit: number = baseOfflineLimit
     
     buildingState: Buildings.State = {}
     upgradeState: Upgrades.State = {}
@@ -52,16 +54,21 @@ export class Game {
 
         this.wealth = 0
         this.clickFactor = baseClickFactor
+        this.offlineFactor = baseOfflineFactor
+        this.offlineLimit = baseOfflineLimit
 
         ui.updateAll()
     }
 
     private serializeData() {
         const data = {
+            time: Date.now(),
             wealth: this.wealth,
             buildingState: this.buildingState,
             upgradeState: this.upgradeState,
             clickFactor: this.clickFactor,
+            offlineFactor: this.offlineFactor,
+            offlineLimit: this.offlineLimit,
         }
         ui.displayMessage("Spiel gespeichert!")
         console.log("Game saved!")
@@ -72,6 +79,8 @@ export class Game {
         try {
             this.wealth = data.wealth ?? 0
             this.clickFactor = data.clickFactor ?? this.clickFactor
+            this.offlineFactor = data.offlineFactor ?? this.offlineFactor
+            this.offlineLimit = data.offlineLimit ?? this.offlineLimit
 
             for (const [id, state] of Object.entries(data.buildingState)) {
                 if (id in this.buildingState)
@@ -84,7 +93,16 @@ export class Game {
                 }
             }
 
-            this.recalcWps()
+            this.recalcWps(false)
+
+            const deltaTimeSeconds = Math.floor((Date.now() - (data.time ?? Date.now())) / 1000)
+            if (deltaTimeSeconds >= 10 && this.offlineFactor > 0 && this.offlineLimit > 0) {
+                const addedWealth = this.wps * this.offlineFactor * Math.min(deltaTimeSeconds, this.offlineLimit)
+
+                // Don't need to use the addWealth method, because updateAll is called anyways (end of the method)
+                this.wealth += addedWealth
+                ui.displayMessage(`In <b>${formatDuration(deltaTimeSeconds)}</b> wurden offline <b>${formatNumber(addedWealth)} ${unit}</b> generiert.`)
+            }
         } catch (err) {
             ui.displayError("Spiel konnte nicht geladen werden", err)
         }
@@ -141,7 +159,7 @@ export class Game {
     }
     // --- Ende ChatGPT ---
 
-    recalcWps() {
+    recalcWps(updateUi: boolean = true) {
         let wps = 0.0
 
         for (const [id, amount] of Object.entries(this.buildingState)) {
@@ -155,7 +173,8 @@ export class Game {
         }
 
         this.wps = wps
-        ui.updateWps()
+        if (updateUi)
+            ui.updateWps()
     }
 
     setWealth(amount: number) {
