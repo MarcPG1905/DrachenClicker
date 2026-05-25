@@ -6,8 +6,16 @@ import { game } from "./main"
 import { formatNumber } from "./util/number_converter"
 import { unit, unitPerSecond } from "./data/constants"
 
+type NotificationItem = {
+    element: HTMLDivElement,
+    count: number,
+    timeoutId: number,
+}
+
 export class UIMessenger {
     notificationTimeout: number | undefined
+
+    private notifications = new Map<string, NotificationItem>()
     
     constructor(
         private fxLayer: HTMLDivElement,
@@ -32,14 +40,79 @@ export class UIMessenger {
         floatingText.addEventListener("animationend", () => floatingText.remove());
     }
 
-    displayMessage(message: string, duration: number = 1000) {
-        this.notificationBox.textContent = message
-        this.notificationBox.classList.add("show")
-        
-        clearTimeout(this.notificationTimeout)
-        this.notificationTimeout = window.setTimeout(() => {
-            this.notificationBox.classList.remove("show")
+    displayMessage(message: string, duration: number = 3000) {
+        let item = this.notifications.get(message)
+
+        if (item) {
+            item.count++
+
+            const label = item.element.querySelector<HTMLSpanElement>(".text")!
+            label.innerHTML = `${message} (x${item.count})`
+
+            clearTimeout(item.timeoutId)
+            item.timeoutId = window.setTimeout(() => {
+                this.removeMessage(message)
+            }, duration)
+
+            return
+        }
+
+        const div = element("div", {
+            classes: [ "notificationItem" ],
+            // +++ ChatGPT +++
+            style: {
+                opacity: "0",
+                transform: "translateY(10px)"
+            },
+            // --- Ende ChatGPT ---
+            children: [
+                element("span", {
+                    classes: [ "text" ],
+                    html: message,
+                })
+            ],
+        })
+        this.notificationBox.appendChild(div)
+
+        // +++ ChatGPT +++
+        div.getBoundingClientRect()
+
+        requestAnimationFrame(() => {
+            div.classList.add("show")
+
+            // cleanup inline styles so CSS owns it again
+            div.style.opacity = ""
+            div.style.transform = ""
+        })
+        // --- Ende ChatGPT ---
+
+        const timeoutId = window.setTimeout(() => {
+            this.removeMessage(message)
         }, duration)
+
+
+        this.notifications.set(message, {
+            element: div,
+            count: 1,
+            timeoutId: timeoutId,
+        })
+    }
+
+    private removeMessage(message: string) {
+        const item = this.notifications.get(message)
+        if (!item) return
+
+        const el = item.element
+
+        el.classList.remove("show")
+        el.classList.add("hide")
+
+        el.addEventListener("transitionend", () => {
+            el.remove()
+        }, { once: true })
+
+        clearTimeout(item.timeoutId)
+        this.notifications.delete(message)
     }
 
     displayError(message: string, err: unknown, duration: number = 1000) {
