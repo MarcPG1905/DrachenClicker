@@ -7,8 +7,6 @@ import { ui } from "./main"
 import { formatDuration, formatNumber } from "./util/number_converter"
 
 export class Game {
-    paused: boolean = false
-
     wealth: number = 0
 
     clickFactor: number = baseClickFactor
@@ -27,8 +25,7 @@ export class Game {
         this.loadGame()
 
         setInterval(() => {
-            if (!this.paused)
-                this.addWealth(this.wps * wealthUpdateInterval)
+            this.addWealth(this.wps * wealthUpdateInterval)
         }, wealthUpdateInterval * 1000)
 
         setInterval(() => { this.saveGame() }, autosaveInterval * 1000)
