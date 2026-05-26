@@ -7,6 +7,8 @@ import { ui } from "./main"
 import { formatDuration, formatNumber } from "./util/number_converter"
 
 export class Game {
+    loaded: boolean = false
+
     // Modifiable "Constants"
     clickFactor: number = baseClickFactor
     offlineFactor: number = baseOfflineFactor
@@ -26,15 +28,23 @@ export class Game {
 
     constructor() {
         this.initStates()
+        
+        // Timeout so this instance is fully constructed before accessing externally.
+        setTimeout(() => {
         loadGame()
+            this.loaded = true
+        })
 
-        setInterval(() => { saveGame() }, autosaveInterval * 1000)
+        setInterval(() => {
+            if (this.loaded) // Never save before loading, cause that would just reset game state.
+                saveGame()
+        }, autosaveInterval * 1000)
 
         // Run UPS ticking logic.
         let lastTick = Date.now()
         setInterval(() => {
             const currentTime = Date.now()
-            this.tick(lastTick - currentTime)
+            this.tick(currentTime - lastTick)
             lastTick = currentTime
         }, tickInterval * 1000)
     }

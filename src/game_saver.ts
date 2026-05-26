@@ -23,6 +23,9 @@ function loadData(data: any) {
 }
 
 export function saveGame() {
+    if (!game.loaded)
+        throw new Error("Cannot save game before loading.")
+    
     localStorage.setItem("gameSave", JSON.stringify(serializeData()))
 }
 
@@ -34,6 +37,9 @@ export function loadGame() {
 
 // +++ Start ChatGPT +++
 export function saveGameToFile() {
+    if (!game.loaded)
+        throw new Error("Cannot save game before loading.")
+
     const bytes = new Uint8Array(encode(serializeData()))
     const blob = new Blob([bytes], { type: "application/octet-stream" });
     const url = URL.createObjectURL(blob);
