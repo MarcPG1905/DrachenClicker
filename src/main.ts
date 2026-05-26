@@ -2,6 +2,7 @@ import './style.css'
 import { Game } from './game'
 import { UIMessenger as UI } from './ui'
 import { setupKeyboardShortcuts } from './keyboard_shortcuts'
+import { saveGame } from './game_saver'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = /*html*/ `
 <div id="notification"></div>
@@ -45,4 +46,4 @@ Object.assign(globalThis, {
 })
 
 // Auto-save when closing (or maybe some other events aswell, not sure)
-window.addEventListener("beforeunload", () => { game.saveGame() })
+window.addEventListener("beforeunload", () => { saveGame() })

@@ -1,8 +1,8 @@
-import { decode, encode } from "cbor-x"
 import * as Buildings from "./data/buildings"
 import { autosaveInterval, baseClickFactor, gameName, wealthUpdateInterval, unit, baseOfflineFactor, baseOfflineLimit } from "./data/constants"
 import { calculateCost } from "./data/object"
 import * as Upgrades from "./data/upgrades"
+import { loadGame, saveGame } from "./game_saver"
 import { ui } from "./main"
 import { formatDuration, formatNumber } from "./util/number_converter"
 
@@ -22,13 +22,13 @@ export class Game {
 
     constructor() {
         this.initStates()
-        this.loadGame()
+        loadGame()
+
+        setInterval(() => { saveGame() }, autosaveInterval * 1000)
 
         setInterval(() => {
             this.addWealth(this.wps * wealthUpdateInterval)
         }, wealthUpdateInterval * 1000)
-
-        setInterval(() => { this.saveGame() }, autosaveInterval * 1000)
     }
 
     initStates() {
@@ -57,8 +57,8 @@ export class Game {
         ui.updateAll()
     }
 
-    private serializeData() {
-        const data = {
+    getData() {
+        return {
             time: Date.now(),
             wealth: this.wealth,
             buildingState: this.buildingState,
@@ -67,13 +67,9 @@ export class Game {
             offlineFactor: this.offlineFactor,
             offlineLimit: this.offlineLimit,
         }
-        ui.displayMessage("Spiel gespeichert!")
-        console.log("Game saved!")
-        return data
     }
 
-    private loadData(data: any) {
-        try {
+    applyData(data: any) {
             this.wealth = data.wealth ?? 0
             this.clickFactor = data.clickFactor ?? this.clickFactor
             this.offlineFactor = data.offlineFactor ?? this.offlineFactor
@@ -100,61 +96,7 @@ export class Game {
                 this.wealth += addedWealth
                 ui.displayMessage(`In <b>${formatDuration(deltaTimeSeconds)}</b> wurden offline <b>${formatNumber(addedWealth)} ${unit}</b> generiert.`)
             }
-        } catch (err) {
-            ui.displayError("Spiel konnte nicht geladen werden", err)
-        }
-
-        ui.displayMessage("Spiel geladen!")
-        console.log("Game loaded!")
-
-        setTimeout(() => { ui.updateAll() })
     }
-
-    saveGame() {
-        localStorage.setItem("gameSave", JSON.stringify(this.serializeData()))
-    }
-
-    loadGame() {
-        const saved = localStorage.getItem("gameSave")
-        if (saved)
-            this.loadData(JSON.parse(saved))
-    }
-
-    // +++ Start ChatGPT +++
-    saveGameToFile() {
-        const bytes = new Uint8Array(encode(this.serializeData()))
-        const blob = new Blob([bytes], { type: "application/octet-stream" });
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${gameName}-Save.cbor`;
-        a.click();
-
-        URL.revokeObjectURL(url);
-    }
-
-    loadGameFromFile() {
-        return new Promise<void>((resolve, reject) => {
-            const input = document.createElement("input");
-            input.type = "file";
-            input.accept = ".cbor";
-
-            input.onchange = async () => {
-                const file = input.files?.[0];
-                if (!file) return reject("No file selected");
-
-                const buffer = await file.arrayBuffer();
-                const data = decode(new Uint8Array(buffer));
-
-                this.loadData(data);
-                resolve();
-            };
-
-            input.click();
-        });
-    }
-    // --- Ende ChatGPT ---
 
     recalcWps(updateUi: boolean = true) {
         let wps = 0.0
@@ -179,12 +121,7 @@ export class Game {
         ui.updateWealth()
     }
 
-    removeWealth(amount: number) {
-        this.wealth -= amount
-        ui.updateWealth()
-    }
-
-    addWealth(amount: number) {
+    modWealth(amount: number) {
         this.wealth += amount
         ui.updateWealth()
     }
@@ -193,7 +130,7 @@ export class Game {
         const wpc = this.wps * this.clickFactor
         const added = Math.max(1, 0.9 + wpc/2, wpc)
 
-        this.addWealth(added)
+        this.modWealth(added)
         ui.spawnFloatingText(event.clientX, event.clientY, "+" + formatNumber(added))
     }
 
@@ -202,7 +139,7 @@ export class Game {
         const cost = calculateCost(upgrade, 0)
 
         if (this.wealth >= cost) {
-            this.removeWealth(cost)
+            this.modWealth(-cost)
             this.upgradeState[id] = true
             this.activeUpgrades.push(upgrade)
             
@@ -223,7 +160,7 @@ export class Game {
         const cost = calculateCost(building, this.buildingState[id])
 
         if (this.wealth >= cost) {
-            this.removeWealth(cost)
+            this.modWealth(-cost)
             this.buildingState[id] += 1
 
             this.recalcWps()

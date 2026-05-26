@@ -1,4 +1,4 @@
-import { game } from "./main"
+import { loadGameFromFile, saveGame, saveGameToFile } from "./game_saver"
 
 export function setupKeyboardShortcuts() {
     document.addEventListener("keydown", (e) => {
@@ -7,14 +7,14 @@ export function setupKeyboardShortcuts() {
                 case "KeyS":
                     e.preventDefault()
                     if (e.shiftKey) {
-                        game.saveGameToFile()
+                        saveGameToFile()
                     } else {
-                        game.saveGame()
+                        saveGame()
                     }
                     break;
                 case "KeyL":
                     e.preventDefault()
-                    game.loadGameFromFile()
+                    loadGameFromFile()
                     break;
                 default:
                     break;
