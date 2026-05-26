@@ -1,5 +1,5 @@
 import * as Buildings from "./data/buildings"
-import { autosaveInterval, baseClickFactor, unit, baseOfflineFactor, baseOfflineLimit, baseOccurrenceTimer as baseOccurrenceTimeMax, tickInterval, tps, baseMeddlModeTime, occurrenceSize } from "./data/constants"
+import { autosaveInterval, baseClickFactor, unit, baseOfflineFactor, baseOfflineLimit, baseOccurrenceTimer as baseOccurrenceTimeMax, tickInterval, tps, baseMeddlModeTime, occurrenceSize, unitPerSecond } from "./data/constants"
 import { calculateCost } from "./data/object"
 import * as Upgrades from "./data/upgrades"
 import { loadGame, saveGame } from "./game_saver"
@@ -81,6 +81,8 @@ export class Game {
 
     // Cached Values
     wps: number = 0.0
+
+    meddlModeWealth = 0
 
     // Game State
     wealth: number = 0
@@ -212,18 +214,26 @@ export class Game {
     modWealth(amount: number) {
         this.wealth += amount
         ui.updateWealth()
+
+        if (amount > 0 && this.meddlModeLeft > 0)
+            this.meddlModeWealth += amount
     }
 
     enableMeddlMode() {
         ui.enableShine()
         this.meddlModeLeft = this.meddlModeTime
         this.recalcWps()
+
+        ui.displayMessage(`Für die nächsten <b>${formatDuration(this.meddlModeTime)}</b> gibt dir der Meddl-Mode <b>8x</b> mehr ${unitPerSecond}.`, 5000)
     }
 
     disableMeddlMode() {
         ui.disableShine()
         this.meddlModeLeft = 0
         this.recalcWps()
+
+        ui.displayMessage(`Du hast während diesem Meddl-Mode <b>${formatNumber(this.meddlModeWealth)} ${unit}</b> gemacht.`, 3000)
+        this.meddlModeWealth = 0
     }
 
     // ================= //
