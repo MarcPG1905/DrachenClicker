@@ -1,5 +1,5 @@
 import * as Buildings from "./data/buildings"
-import { autosaveInterval, baseClickFactor, gameName, wealthUpdateInterval, unit, baseOfflineFactor, baseOfflineLimit } from "./data/constants"
+import { autosaveInterval, baseClickFactor, unit, baseOfflineFactor, baseOfflineLimit, tickInterval } from "./data/constants"
 import { calculateCost } from "./data/object"
 import * as Upgrades from "./data/upgrades"
 import { loadGame, saveGame } from "./game_saver"
@@ -7,18 +7,22 @@ import { ui } from "./main"
 import { formatDuration, formatNumber } from "./util/number_converter"
 
 export class Game {
-    wealth: number = 0
-
+    // Modifiable "Constants"
     clickFactor: number = baseClickFactor
     offlineFactor: number = baseOfflineFactor
     offlineLimit: number = baseOfflineLimit
     
+    // Shop State
     buildingState: Buildings.State = {}
     upgradeState: Upgrades.State = {}
 
     activeUpgrades: Upgrades.Upgrade[] = []
 
+    // Cached Values
     wps: number = 0.0
+
+    // Game State
+    wealth: number = 0
 
     constructor() {
         this.initStates()
@@ -26,9 +30,13 @@ export class Game {
 
         setInterval(() => { saveGame() }, autosaveInterval * 1000)
 
+        // Run UPS ticking logic.
+        let lastTick = Date.now()
         setInterval(() => {
-            this.addWealth(this.wps * wealthUpdateInterval)
-        }, wealthUpdateInterval * 1000)
+            const currentTime = Date.now()
+            this.tick(lastTick - currentTime)
+            lastTick = currentTime
+        }, tickInterval * 1000)
     }
 
     initStates() {
@@ -70,32 +78,32 @@ export class Game {
     }
 
     applyData(data: any) {
-            this.wealth = data.wealth ?? 0
-            this.clickFactor = data.clickFactor ?? this.clickFactor
-            this.offlineFactor = data.offlineFactor ?? this.offlineFactor
-            this.offlineLimit = data.offlineLimit ?? this.offlineLimit
+        this.wealth = data.wealth ?? 0
+        this.clickFactor = data.clickFactor ?? this.clickFactor
+        this.offlineFactor = data.offlineFactor ?? this.offlineFactor
+        this.offlineLimit = data.offlineLimit ?? this.offlineLimit
 
-            for (const [id, state] of Object.entries(data.buildingState)) {
-                if (id in this.buildingState)
-                    this.buildingState[id] = state as number
+        for (const [id, state] of Object.entries(data.buildingState)) {
+            if (id in this.buildingState)
+                this.buildingState[id] = state as number
+        }
+        for (const [id, state] of Object.entries(data.upgradeState)) {
+            if (id in this.upgradeState && state as boolean) {
+                this.upgradeState[id] = true
+                this.activeUpgrades.push(Upgrades.get(id)!)
             }
-            for (const [id, state] of Object.entries(data.upgradeState)) {
-                if (id in this.upgradeState && state as boolean) {
-                    this.upgradeState[id] = true
-                    this.activeUpgrades.push(Upgrades.get(id)!)
-                }
-            }
+        }
 
-            this.recalcWps(false)
+        this.recalcWps(false)
 
-            const deltaTimeSeconds = Math.floor((Date.now() - (data.time ?? Date.now())) / 1000)
-            if (deltaTimeSeconds >= 10 && this.offlineFactor > 0 && this.offlineLimit > 0) {
-                const addedWealth = this.wps * this.offlineFactor * Math.min(deltaTimeSeconds, this.offlineLimit)
+        const deltaTimeSeconds = Math.floor((Date.now() - (data.time ?? Date.now())) / 1000)
+        if (deltaTimeSeconds >= 10 && this.offlineFactor > 0 && this.offlineLimit > 0) {
+            const addedWealth = this.wps * this.offlineFactor * Math.min(deltaTimeSeconds, this.offlineLimit)
 
-                // Don't need to use the addWealth method, because updateAll is called anyways (end of the method)
-                this.wealth += addedWealth
-                ui.displayMessage(`In <b>${formatDuration(deltaTimeSeconds)}</b> wurden offline <b>${formatNumber(addedWealth)} ${unit}</b> generiert.`)
-            }
+            // Don't need to use the addWealth method, because updateAll is called anyways (end of the method)
+            this.wealth += addedWealth
+            ui.displayMessage(`In <b>${formatDuration(deltaTimeSeconds)}</b> wurden offline <b>${formatNumber(addedWealth)} ${unit}</b> generiert.`)
+        }
     }
 
     recalcWps(updateUi: boolean = true) {
@@ -124,6 +132,14 @@ export class Game {
     modWealth(amount: number) {
         this.wealth += amount
         ui.updateWealth()
+    }
+
+    // ================= //
+    // Actual Game Logic //
+    // ================= //
+
+    tick(deltaMs: number) {
+        this.modWealth(this.wps * (deltaMs / 1000))
     }
 
     click(event: MouseEvent) {
