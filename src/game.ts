@@ -1,10 +1,67 @@
 import * as Buildings from "./data/buildings"
-import { autosaveInterval, baseClickFactor, unit, baseOfflineFactor, baseOfflineLimit, tickInterval } from "./data/constants"
+import { autosaveInterval, baseClickFactor, unit, baseOfflineFactor, baseOfflineLimit, baseOccurrenceTimer as baseOccurrenceTimeMax, tickInterval, tps, baseMeddlModeTime, occurrenceSize } from "./data/constants"
 import { calculateCost } from "./data/object"
 import * as Upgrades from "./data/upgrades"
 import { loadGame, saveGame } from "./game_saver"
-import { ui } from "./main"
+import { game, ui } from "./main"
+import { boolByChance, spawnChance } from "./util/calc"
+import { element } from "./util/dom_helper"
 import { formatDuration, formatNumber } from "./util/number_converter"
+
+class Occurrence {
+    private div: HTMLDivElement
+
+    private life: number = 0
+    private clicked: boolean = false
+
+    constructor(
+        public duration: number,
+
+        private x = Math.floor(Math.random() * (window.innerWidth - occurrenceSize)),
+        private y = Math.floor(Math.random() * (window.innerHeight - occurrenceSize)),
+    ) {
+        this.div = element("div", {
+            classes: [ "occurrence" ],
+            style: {
+                left: `${this.x}px`,
+                top: `${this.y}px`,
+            },
+            onclick: () => this.click(),
+        })
+        ui.addFxElement(this.div)
+        
+        game.currentOccurrence = this
+    }
+
+    tick() {
+        this.life++
+
+        const curve = 1 - ((this.life / this.duration) * 2 - 1) ** 4
+
+        const hash = this.x * this.y
+
+        const rotation = Math.sin(hash * 0.69) * 24 + Math.sin(game.currentTick * (0.35 + Math.sin(hash * 0.97) * 0.15) + hash) * (3 + Math.sin(hash * 0.36) * 2) // ChatGPT
+        const scale = 3 * (1 + Math.sin(hash * 0.53) * 0.2) * curve * (1 + (0.06 + Math.sin(hash * 0.41) * 0.05) * (Math.sin(game.currentTick * (0.25 + Math.sin(hash * 0.73) * 0.15) + hash)))
+
+        this.div.style.transform = `rotate(${rotation}deg) scale(${scale})`
+
+        if (this.life >= this.duration) this.despawn()
+    }
+
+    click() {
+        if (this.clicked) return
+        this.clicked = true
+    
+        game.enableMeddlMode()
+        this.despawn()
+    }
+
+    despawn() {
+        ui.removeFxElement(this.div)
+        this.div.remove()
+        game.currentOccurrence = undefined
+    }
+}
 
 export class Game {
     loaded: boolean = false
@@ -13,6 +70,8 @@ export class Game {
     clickFactor: number = baseClickFactor
     offlineFactor: number = baseOfflineFactor
     offlineLimit: number = baseOfflineLimit
+    occurrenceTimeMax: number = baseOccurrenceTimeMax
+    meddlModeTime: number = baseMeddlModeTime
     
     // Shop State
     buildingState: Buildings.State = {}
@@ -25,13 +84,18 @@ export class Game {
 
     // Game State
     wealth: number = 0
+    occurrenceTimer: number = 0
+    meddlModeLeft: number = 0
+    currentTick: number = 0
+
+    currentOccurrence?: Occurrence
 
     constructor() {
         this.initStates()
         
         // Timeout so this instance is fully constructed before accessing externally.
         setTimeout(() => {
-        loadGame()
+            loadGame()
             this.loaded = true
         })
 
@@ -43,8 +107,11 @@ export class Game {
         // Run UPS ticking logic.
         let lastTick = Date.now()
         setInterval(() => {
+            this.currentTick++
+
             const currentTime = Date.now()
-            this.tick(currentTime - lastTick)
+            this.tick(currentTime - lastTick, this.currentTick)
+
             lastTick = currentTime
         }, tickInterval * 1000)
     }
@@ -129,6 +196,9 @@ export class Game {
                 wps = upgrade.wpsEffect(wps)
         }
 
+        if (this.meddlModeLeft > 0)
+            wps *= 8
+
         this.wps = wps
         if (updateUi)
             ui.updateWps()
@@ -144,12 +214,46 @@ export class Game {
         ui.updateWealth()
     }
 
+    enableMeddlMode() {
+        ui.enableShine()
+        this.meddlModeLeft = this.meddlModeTime
+        this.recalcWps()
+    }
+
+    disableMeddlMode() {
+        ui.disableShine()
+        this.meddlModeLeft = 0
+        this.recalcWps()
+    }
+
     // ================= //
     // Actual Game Logic //
     // ================= //
 
-    tick(deltaMs: number) {
+    tick(deltaMs: number, tick: number) {
         this.modWealth(this.wps * (deltaMs / 1000))
+
+        this.currentOccurrence?.tick()
+
+        if (Math.floor(tick) % tps == 0) { // Every second
+            if (this.meddlModeLeft > 0 && --this.meddlModeLeft <= 0)
+                this.disableMeddlMode()
+
+            if (!this.currentOccurrence) {
+                this.occurrenceTimer++
+
+                const chance = spawnChance(
+                    this.occurrenceTimer,
+                    this.occurrenceTimeMax / 3,
+                    this.occurrenceTimeMax
+                )
+
+                if (boolByChance(chance)) {
+                    this.occurrenceTimer = 0
+                    this.spawnOccurrence()
+                }
+            }
+        }
     }
 
     click(event: MouseEvent) {
@@ -158,6 +262,10 @@ export class Game {
 
         this.modWealth(added)
         ui.spawnFloatingText(event.clientX, event.clientY, "+" + formatNumber(added))
+    }
+
+    spawnOccurrence() {
+        new Occurrence(15 * tps)
     }
 
     purchaseUpgrade(id: string): boolean {

@@ -121,6 +121,14 @@ export class UIMessenger {
         this.displayMessage(`${message}: ${err}`, duration)
     }
 
+    addFxElement(element: HTMLElement) {
+        this.fxLayer.appendChild(element)
+    }
+
+    removeFxElement(element: HTMLElement) {
+        this.fxLayer.removeChild(element)
+    }
+
     constructShop() {
         const upgradesParent = document.querySelector<HTMLElement>(`#upgrades`)!
         upgradesParent.innerHTML = ""
