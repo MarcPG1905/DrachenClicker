@@ -18,6 +18,7 @@ export class UIMessenger {
     private notifications = new Map<string, NotificationItem>()
     
     constructor(
+        private shine: HTMLDivElement,
         private fxLayer: HTMLDivElement,
         private notificationBox: HTMLDivElement,
         private counter: HTMLElement,
@@ -230,5 +231,13 @@ export class UIMessenger {
 
         document.querySelector<HTMLElement>(`#productPrice${building.uiId}`)!.innerHTML = `${formatNumber(cost, true)} ${unit}`
         document.querySelector<HTMLElement>(`#productsOwned${building.uiId}`)!.innerHTML = `${amount}`
+    }
+
+    enableShine() {
+        this.shine.style.opacity = "0.15"
+    }
+
+    disableShine() {
+        this.shine.style.opacity = "0.0"
     }
 }

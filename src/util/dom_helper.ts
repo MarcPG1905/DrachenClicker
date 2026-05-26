@@ -8,7 +8,7 @@ type ElementOptions = {
     attributes?: Record<string, string>
     style?: Partial<CSSStyleDeclaration>
     children?: HTMLElement[]
-    onclick?: (this: GlobalEventHandlers, ev: MouseEvent) => any
+    onclick?: (ev: MouseEvent) => any
 }
 
 export function element<K extends keyof HTMLElementTagNameMap>(
@@ -48,7 +48,7 @@ export function element<K extends keyof HTMLElementTagNameMap>(
     }
 
     if (options.onclick) {
-        el.onclick = options.onclick
+        el.addEventListener("click", (e) => options.onclick!(e as MouseEvent))
     }
 
     return el

@@ -5,6 +5,7 @@ import { setupKeyboardShortcuts } from './keyboard_shortcuts'
 import { saveGame } from './game_saver'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = /*html*/ `
+<div id="shine"></div>
 <div id="notification"></div>
 <div id="fx-layer"></div>
 <div id="tooltip"></div>
@@ -23,6 +24,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = /*html*/ `
 `
 
 export const ui = new UI(
+    document.querySelector<HTMLDivElement>('#shine')!,
     document.querySelector<HTMLDivElement>('#fx-layer')!,
     document.querySelector<HTMLDivElement>('#notification')!,
     document.querySelector<HTMLElement>('#counter')!,
