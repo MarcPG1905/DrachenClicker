@@ -29,6 +29,8 @@ export const ui = new UI(
     document.querySelector<HTMLDivElement>('#notification')!,
     document.querySelector<HTMLElement>('#counter')!,
     document.querySelector<HTMLElement>('#wps')!,
+    document.querySelector<HTMLElement>('#upgrades')!,
+    document.querySelector<HTMLElement>('#buildings')!,
 )
 
 export const game = new Game()

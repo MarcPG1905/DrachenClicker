@@ -23,6 +23,8 @@ export class UIMessenger {
         private notificationBox: HTMLDivElement,
         private counter: HTMLElement,
         private wps: HTMLElement,
+        private upgradesParent: HTMLElement,
+        private buildingsParent: HTMLElement,
     ) {}
 
     spawnFloatingText(x: number, y: number, text: string) {
@@ -130,22 +132,22 @@ export class UIMessenger {
     }
 
     constructShop() {
-        const upgradesParent = document.querySelector<HTMLElement>(`#upgrades`)!
-        upgradesParent.innerHTML = ""
+        const upgradesFrag = document.createDocumentFragment()
+        const buildingsFrag = document.createDocumentFragment()
 
         for (const [id, bought] of Object.entries(game.upgradeState)) {
             if (bought) continue
             const upgrade = Upgrades.get(id)!
-            upgradesParent.appendChild(this.createUpgrade(upgrade))
+            upgradesFrag.appendChild(this.createUpgrade(upgrade))
         }
-
-        const buildingsParent = document.querySelector<HTMLElement>(`#buildings`)!
-        buildingsParent.innerHTML = ""
 
         for (const [id] of Object.entries(game.buildingState)) {
             const building = Buildings.get(id)!
-            buildingsParent.appendChild(this.createBuilding(building))
+            buildingsFrag.appendChild(this.createBuilding(building))
         }
+
+        this.upgradesParent.replaceChildren(upgradesFrag)
+        this.buildingsParent.replaceChildren(buildingsFrag)
     }
 
     private createUpgrade(upgrade: Upgrades.Upgrade): HTMLDivElement {
@@ -214,11 +216,11 @@ export class UIMessenger {
     }
 
     updateWealth() {
-        this.counter.innerHTML = `${unit}: ${formatNumber(game.wealth, true)}`
+        this.counter.textContent = `${unit}: ${formatNumber(game.wealth, true)}`
     }
 
     updateWps() {
-        this.wps.innerHTML = `${formatNumber(game.wps)} ${unitPerSecond}`
+        this.wps.textContent = `${formatNumber(game.wps)} ${unitPerSecond}`
     }
 
     updateShopUpgrades() {

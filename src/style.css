@@ -171,6 +171,10 @@ b {
   height: min(500px, 50vw);
 }
 
+#counter, #wps {
+  font-variant-numeric: tabular-nums;
+}
+
 #bigButton {
   /* The actual texture - using button instead of image, so you can't drag it. */
   background: url("assets/ofenkase_64.png") no-repeat center;
