@@ -189,8 +189,15 @@ export class Game {
         let wps = 0.0
 
         for (const [id, amount] of Object.entries(this.buildingState)) {
+            let upgradeMultiplier = 1.0
+
+            for (const upgrade of this.activeUpgrades) {
+                if (upgrade.buildingMultipliers && id in upgrade.buildingMultipliers)
+                    upgradeMultiplier *= upgrade.buildingMultipliers[id]()
+            }
+
             const building = Buildings.get(id)!
-            wps += building.baseWps * amount
+            wps += building.baseWps * amount * upgradeMultiplier
         }
 
         for (const upgrade of this.activeUpgrades) {

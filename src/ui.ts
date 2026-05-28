@@ -151,19 +151,52 @@ export class UIMessenger {
     }
 
     private createUpgrade(upgrade: Upgrades.Upgrade): HTMLDivElement {
+        const buildingIconsOffset = Buildings.dataset.length
+
         return element("div", {
-            classes: [ "upgradeProduct" ],
+            classes: [ "buildingProduct", "green" ],
             onclick: () => { game.purchaseUpgrade(upgrade.id) },
 
             children: [
                 element("div", {
                     classes: [ "icon" ],
                     style: {
-                        backgroundPositionX: `${upgrade.icon * -48}px`
+                        backgroundPositionX: `${(buildingIconsOffset + upgrade.icon) * -48}px`
                     },
                 }),
+
+                element("div", {
+                    classes: [ "content" ],
+
+                    children: [
+                        element("div", {
+                            classes: [ "productName" ],
+                            text: upgrade.name,
+                        }),
+
+                        element("span", {
+                            id: `productPriceUpgrade${upgrade.icon}`,
+                            classes: [ "productPrice" ],
+                            text: `${formatNumber(upgrade.baseCost, true)} ${unit}`,
+                        }),
+                    ],
+                })
             ],
         })
+
+        // return element("div", {
+        //     classes: [ "upgradeProduct" ],
+        //     onclick: () => { game.purchaseUpgrade(upgrade.id) },
+
+        //     children: [
+        //         element("div", {
+        //             classes: [ "icon" ],
+        //             style: {
+        //                 backgroundPositionX: `${(buildingIconsOffset + upgrade.icon) * -48}px`
+        //             },
+        //         }),
+        //     ],
+        // })
     }
 
     private createBuilding(building: Buildings.Building): HTMLDivElement {
@@ -191,13 +224,11 @@ export class UIMessenger {
                         element("span", {
                             id: `productPrice${building.uiId}`,
                             classes: [ "productPrice" ],
-                            text: building.name,
                         }),
 
                         element("div", {
                             id: `productsOwned${building.uiId}`,
                             classes: [ "productsOwned" ],
-                            text: building.name,
                         }),
                     ],
                 })
